@@ -18,14 +18,15 @@ export class Webcam extends React.Component {
         this.canvas = ReactDOM.findDOMNode(this).querySelector('#stream canvas');
 
         let regl=require('regl')(this.canvas);
-        const capture = () => {
 
+        const capture = () => {
+                
                regl.frame(() => {
-                    //barrelDistort(regl, this.video)
-                    perspectiveDistort(regl,this.video, 
+                    barrelDistort(regl, this.video)
+                    /*perspectiveDistort(regl,this.video, 
                         [30,30,30,this.video.height-30, this.video.width-30, this.video.height-30, this.video.width-30,0],
                         [30,30,30,this.video.height-30, this.video.width-30, this.video.height-30, this.video.width-30,0]
-                    )
+                    )*/
                     
                })
 

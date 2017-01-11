@@ -40,96 +40,95 @@ export const flatImage = (regl, image) => {
 export const barrelDistort = (regl, image, lens, fov) => {
 
     let uLens = (lens) ? [lens.a, lens.b, lens.F, lens.scale] : [1.0, 1.0, 1.0, 1.5]
-
     let uFov = (fov)? [fov.x, fov.y] : [1.0,1.0]
-
     let uSampler = regl.texture(image);
 
-    
+    if (!barrelDistort.COMMAND){
+            barrelDistort.COMMAND = regl({
+            frag: `
+            #ifdef GL_ES
+            precision highp float;
+            #endif
 
-    regl({
-        frag: `
-        #ifdef GL_ES
-        precision highp float;
-        #endif
+            uniform vec4 uLens;
+            uniform vec2 uFov;
 
-        uniform vec4 uLens;
-        uniform vec2 uFov;
+            uniform sampler2D uSampler;
 
-        uniform sampler2D uSampler;
+            varying vec3 vPosition;
+            varying vec2 vTextureCoord;
 
-        varying vec3 vPosition;
-        varying vec2 vTextureCoord;
+            vec2 GLCoord2TextureCoord(vec2 glCoord) {
+                return glCoord  * vec2(1.0, -1.0)/ 2.0 + vec2(0.5, 0.5);
+            }
 
-        vec2 GLCoord2TextureCoord(vec2 glCoord) {
-            return glCoord  * vec2(1.0, -1.0)/ 2.0 + vec2(0.5, 0.5);
-        }
+            void main(void){
+                float scale = uLens.w;
+                float F = uLens.z;
+                
+                float L = length(vec3(vPosition.xy/scale, F));
 
-        void main(void){
-            float scale = uLens.w;
-            float F = uLens.z;
-            
-            float L = length(vec3(vPosition.xy/scale, F));
+                vec2 vMapping = vPosition.xy * F / L;
+                vMapping = vMapping * uLens.xy;
 
-            vec2 vMapping = vPosition.xy * F / L;
-            vMapping = vMapping * uLens.xy;
+                vMapping = GLCoord2TextureCoord(vMapping/scale);
 
-            vMapping = GLCoord2TextureCoord(vMapping/scale);
+                vec4 texture = texture2D(uSampler, vMapping);
+                if(vMapping.x > 0.99 || vMapping.x < 0.01 || vMapping.y > 0.99 || vMapping.y < 0.01){
+                    texture = vec4(0.0, 0.0, 0.0, 1.0);
+                } 
+                gl_FragColor = texture;
+            }
+            `,
+            vert: `
+            #ifdef GL_ES
+            precision highp float;
+            #endif
 
-            vec4 texture = texture2D(uSampler, vMapping);
-            if(vMapping.x > 0.99 || vMapping.x < 0.01 || vMapping.y > 0.99 || vMapping.y < 0.01){
-                texture = vec4(0.0, 0.0, 0.0, 1.0);
-            } 
-            gl_FragColor = texture;
-        }
-        `,
-        vert: `
-        #ifdef GL_ES
-        precision highp float;
-        #endif
+            attribute vec3 aVertexPosition;
 
-        attribute vec3 aVertexPosition;
+            attribute vec2 aTextureCoord;
 
-        attribute vec2 aTextureCoord;
+            varying vec3 vPosition;
+            varying vec2 vTextureCoord;
 
-        varying vec3 vPosition;
-        varying vec2 vTextureCoord;
+            void main(void){
+                vPosition = aVertexPosition;
+                vTextureCoord = aTextureCoord;
 
-        void main(void){
-            vPosition = aVertexPosition;
-            vTextureCoord = aTextureCoord;
-
-            gl_Position = vec4(vPosition,1.0);
-        }
-        `,
-        attributes: {
-            aVertexPosition: regl.buffer([
-                -1.0, -1.0, 0.0,
-                1.0, -1.0, 0.0,
-                1.0, 1.0, 0.0,
-                -1.0, 1.0, 0.0
-            ]),
-            aTextureCoord: regl.buffer([
-                0.0, 0.0,
-                1.0, 0.0,
-                1.0, 1.0,
-                0.0, 1.0
+                gl_Position = vec4(vPosition,1.0);
+            }
+            `,
+            attributes: {
+                aVertexPosition: regl.buffer([
+                    -1.0, -1.0, 0.0,
+                    1.0, -1.0, 0.0,
+                    1.0, 1.0, 0.0,
+                    -1.0, 1.0, 0.0
+                ]),
+                aTextureCoord: regl.buffer([
+                    0.0, 0.0,
+                    1.0, 0.0,
+                    1.0, 1.0,
+                    0.0, 1.0
+                ])
+            },
+            uniforms: {
+                uLens: regl.prop('uLens'),
+                uFov: regl.prop('uFov'),
+                uSampler: regl.prop('uSampler')
+            },
+            elements : regl.elements([
+                [0, 1, 2],
+                [0, 2, 3],
+                [2, 1, 0],
+                [3, 2, 0]
             ])
-        },
-        uniforms: {
-            uLens: regl.prop('uLens'),
-            uFov: regl.prop('uFov'),
-            uSampler: regl.prop('uSampler')
-        },
-        elements : regl.elements([
-            [0, 1, 2],
-            [0, 2, 3],
-            [2, 1, 0],
-            [3, 2, 0]
-        ])
 
-    })({ uSampler, uLens, uFov })
+    })
+    }
 
+    return barrelDistort.COMMAND({ uSampler, uLens, uFov })
 }
 
 export const perspectiveDistort = (regl, image, before, after ) => {
@@ -201,57 +200,60 @@ export const perspectiveDistort = (regl, image, before, after ) => {
 
     let matrix = perspective(before, after)
 
-    return regl({
-        frag: `
-            precision highp float;
-            uniform mat3 matrix;
-            uniform bool useTextureSpace;
-            uniform sampler2D texture;
-            uniform vec2 texSize;
-            varying vec2 texCoord;
-            void main() {
-                vec2 coord = texCoord * texSize;
-                
-                if (useTextureSpace) coord = coord / texSize * 2.0 - 1.0;
-                vec3 warp = matrix * vec3(coord, 1.0);
-                coord = warp.xy / warp.z;
-                if (useTextureSpace) coord = (coord * 0.5 + 0.5) * texSize;
+    if (!perspectiveDistort.COMMAND){
+        perspectiveDistort.COMMAND = regl({
+            frag: `
+                precision highp float;
+                uniform mat3 matrix;
+                uniform bool useTextureSpace;
+                uniform sampler2D texture;
+                uniform vec2 texSize;
+                varying vec2 texCoord;
+                void main() {
+                    vec2 coord = texCoord * texSize;
+                    
+                    if (useTextureSpace) coord = coord / texSize * 2.0 - 1.0;
+                    vec3 warp = matrix * vec3(coord, 1.0);
+                    coord = warp.xy / warp.z;
+                    if (useTextureSpace) coord = (coord * 0.5 + 0.5) * texSize;
 
-                gl_FragColor = texture2D(texture, coord / texSize);
-                vec2 clampedCoord = clamp(coord, vec2(0.0), texSize);
-                if (coord != clampedCoord) {
-                    gl_FragColor.a *= max(0.0, 1.0 - length(coord - clampedCoord));
+                    gl_FragColor = texture2D(texture, coord / texSize);
+                    vec2 clampedCoord = clamp(coord, vec2(0.0), texSize);
+                    if (coord != clampedCoord) {
+                        gl_FragColor.a *= max(0.0, 1.0 - length(coord - clampedCoord));
+                    }
                 }
-            }
-        `,
-        vert:`
-            precision mediump float;
-            attribute vec2 position;
-            varying vec2 texCoord;
-            void main () {
-                texCoord = position;
-                gl_Position = vec4(1.0 - 2.0 * texCoord, 0, 1);
-            }
-        `,
-        attributes:{
-            position:  [
-                0.0, 0.0,
-                1.0, 0.0,
-                1.0, 1.0,
-                0.0, 0.0,
-                0.0, 1.0,
-                1.0, 1.0
-           ]
-        },
-        uniforms:{
-            matrix: regl.prop('uTransformMatrix'),
-            texture: regl.prop('uSampler'),
-            texSize: [image.width, image.height],
-            useTextureSpace: false
-        },
-        count:6
-        
+            `,
+            vert:`
+                precision mediump float;
+                attribute vec2 position;
+                varying vec2 texCoord;
+                void main () {
+                    texCoord = position;
+                    gl_Position = vec4(1.0 - 2.0 * texCoord, 0, 1);
+                }
+            `,
+            attributes:{
+                position:  [
+                    0.0, 0.0,
+                    1.0, 0.0,
+                    1.0, 1.0,
+                    0.0, 0.0,
+                    0.0, 1.0,
+                    1.0, 1.0
+            ]
+            },
+            uniforms:{
+                matrix: regl.prop('uTransformMatrix'),
+                texture: regl.prop('uSampler'),
+                texSize: [image.width, image.height],
+                useTextureSpace: false
+            },
+            count:6
+            
 
-    })({uSampler, uTransformMatrix:matrix });
+        })
+    }
+    return perspectiveDistort.COMMAND({uSampler, uTransformMatrix:matrix });
 
 }
