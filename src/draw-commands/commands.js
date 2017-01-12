@@ -1,26 +1,23 @@
 
-export const flatImage = (regl, image) => {
-
-    let uSampler = regl.texture(image);
-
-    regl({
-        frag: `
-        precision mediump float;
-        uniform sampler2D texture;
-        varying vec2 uv;
-        void main () {
-            gl_FragColor = texture2D(texture, uv);
-        }`,
-
+export const drawCommand = (regl) =>{ 
+    return regl({
         vert: `
-        precision mediump float;
-        attribute vec2 position;
-        varying vec2 uv;
-        void main () {
-            uv = position;
-            gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
-        }`,
-
+            precision mediump float;
+            attribute vec2 position;
+            varying vec2 uv;
+            void main () {
+                uv = position;
+                gl_Position = vec4(1.0 - 2.0 * position, 0, 1);
+            }
+        `,
+        frag: `
+            precision mediump float;
+            uniform sampler2D texture;
+            varying vec2 uv;
+            void main () {
+                gl_FragColor = texture2D(texture, uv);
+            }
+        `,
         attributes: {
             position: [
                 -2, 0,
@@ -28,20 +25,17 @@ export const flatImage = (regl, image) => {
                 2, 2
             ]
         },
-
-        uniforms: {
-            texture: regl.prop('uSampler')
-        },
-
+        framebuffer: regl.prop('dest'),
+        uniforms: {texture: regl.prop('src')},
+        depth: {enable: false},
         count: 3
-    })({ uSampler })
+    });
 }
 
-export const barrelDistort = (regl, image, lens, fov) => {
+export const barrelDistort = (regl, src, dest, lens, fov) => {
 
     let uLens = (lens) ? [lens.a, lens.b, lens.F, lens.scale] : [1.0, 1.0, 1.0, 1.5]
     let uFov = (fov)? [fov.x, fov.y] : [1.0,1.0]
-    let uSampler = regl.texture(image);
 
     if (!barrelDistort.COMMAND){
             barrelDistort.COMMAND = regl({
@@ -116,27 +110,28 @@ export const barrelDistort = (regl, image, lens, fov) => {
             uniforms: {
                 uLens: regl.prop('uLens'),
                 uFov: regl.prop('uFov'),
-                uSampler: regl.prop('uSampler')
+                uSampler: regl.prop('src')
             },
             elements : regl.elements([
                 [0, 1, 2],
                 [0, 2, 3],
                 [2, 1, 0],
                 [3, 2, 0]
-            ])
+            ]),
+            framebuffer: regl.prop('dest')
 
     })
     }
 
-    return barrelDistort.COMMAND({ uSampler, uLens, uFov })
+    return barrelDistort.COMMAND({ src, dest, uLens, uFov })
 }
 
-export const perspectiveDistort = (regl, image, before, after ) => {
+export const perspectiveDistort = (regl, src, dest, before, after ) => {
 
-    before= before || [0, 0, 0, image.height, image.width, image.height, image.width, 0]
+    before= before || [0, 0, 0, src.height, src.width, src.height, src.width, 0]
     after = after || before;
 
-    let uSampler = regl.texture(image);
+   
 
     let getSquareToQuad = (x0, y0, x1, y1, x2, y2, x3, y3) => {
         var dx1 = x1 - x2;
@@ -186,14 +181,14 @@ export const perspectiveDistort = (regl, image, before, after ) => {
         let b = getSquareToQuad.apply(null, before);
         let c = multiply(getInverse(a), b);   
         let matrix = Array.prototype.concat.apply([], c); 
-        if (matrix.length == 4) {
+        if (matrix.length === 4) {
             matrix = [
                 matrix[0], matrix[1], 0,
                 matrix[2], matrix[3], 0,
                 0, 0, 1
             ];
-        } else if (matrix.length != 9) {
-            throw 'can only warp with 2x2 or 3x3 matrix';
+        } else if (matrix.length !== 9) {
+            console.error('can only warp with 2x2 or 3x3 matrix');
         }
         return matrix;
     }
@@ -244,16 +239,17 @@ export const perspectiveDistort = (regl, image, before, after ) => {
             ]
             },
             uniforms:{
-                matrix: regl.prop('uTransformMatrix'),
-                texture: regl.prop('uSampler'),
-                texSize: [image.width, image.height],
+                matrix: regl.prop('matrix'),
+                texture: regl.prop('src'),
+                texSize: [src.width, src.height],
                 useTextureSpace: false
             },
-            count:6
+            count:6,
+            framebuffer: regl.prop('dest')
             
 
         })
     }
-    return perspectiveDistort.COMMAND({uSampler, uTransformMatrix:matrix });
+    return perspectiveDistort.COMMAND({src, dest, matrix });
 
 }
