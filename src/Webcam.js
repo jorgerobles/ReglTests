@@ -36,26 +36,30 @@ export class Webcam extends React.Component {
 
         const capture = (src) => {
 
-            const texture = regl.texture(src)
-                  texture.mipmap = 'nice'
+            
 
-            this.canvas.width = texture.width
-            this.canvas.height = texture.height
+            this.canvas.width = src.width
+            this.canvas.height = src.height
 
-            const fbo = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
-            const fbo2 = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
+            
 
             const loop = regl.frame(() => {
                 try{
-                    fbo({ width: this.props.resolution.width, height: this.props.resolution.height });
-                    fbo2({ width: this.props.resolution.width, height: this.props.resolution.height });
-                    texture(src)
+                    const fbo = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
+                    const fbo2 = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
+                    const texture = regl.texture(src)
+                          texture.mipmap = 'nice'
+                    
                     
                     pipe({ src: texture, dest:fbo })
                     barrelDistort(regl, fbo, fbo2, this.props.lens, this.props.fov)
-
+                    //pipe({ src: fbo2 })
                     let {before, after} = this.props.perspective;
                     perspectiveDistort(regl, fbo2, null, before.map(ratio), after.map(ratio))
+                    
+                    fbo.destroy();
+                    fbo2.destroy()
+                    texture.destroy()
                 } catch(e) {
                     loop.cancel();
                 }
@@ -208,7 +212,11 @@ export class PerspectiveWebcam extends React.Component {
 
         return <div className="perspectiveWebcam">
             <div className="viewPort">
-                <Webcam width={this.props.width} height={this.props.height} perspective={{ before, after }} lens={this.props.lens} fov={this.props.fov} device={this.props.device} />
+                <Webcam width={this.props.width} height={this.props.height} 
+                        perspective={{ before, after }} 
+                        lens={this.props.lens} 
+                        fov={this.props.fov} 
+                        device={this.props.device} />
                 <Coordinator width={this.props.width} height={this.props.height}
                     onChange={(position) => { this.handlePerspectiveChange(position, "before") } }
                     onStop={(position) => { this.handleStop() } }
@@ -225,6 +233,7 @@ export class PerspectiveWebcam extends React.Component {
                     style={{ position: "absolute", top: "0px", left: "0px" }}
                     />
             </div>
+            <code>{JSON.stringify(this.state)}</code>
         </div>
     }
 
@@ -265,3 +274,5 @@ export class VideoControls extends React.Component{
     }
 
 }
+//[164,449,1182,479,872,308,454,293]
+//"lens":{"a":1,"b":"1.78289473684211","F":"1.28399122807018","scale":"0.50"},"fov":{"x":1,"y":1}}
