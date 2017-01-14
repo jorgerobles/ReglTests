@@ -28,6 +28,16 @@ export class Webcam extends React.Component {
         const regl = require('regl')(this.canvas);
         const pipe = drawCommand(regl)
 
+        const swap = (set) =>{
+            
+            return [
+                set[0], this.props.height-set[1],
+                set[2], this.props.height-set[3],
+                set[4], this.props.height-set[5],
+                set[6], this.props.height-set[7],
+            ]
+        }
+        
         const ratio = (value, index) => {
             let wh = !(index % 2) ? this.props.width : this.props.height;
             let rwh = !(index % 2) ? this.props.resolution.width : this.props.resolution.height;
@@ -47,20 +57,22 @@ export class Webcam extends React.Component {
                 try{
                     const fbo = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
                     const fbo2 = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
+
                     const texture = regl.texture(src)
                           texture.mipmap = 'nice'
                     
                     
-                    //pipe({ src: texture, dest:null })
-                    //barrelDistort(regl, texture, fbo, this.props.lens, this.props.fov)
-                    //pipe({ src: fbo, dest:fbo2 })
-                    let {before, after} = this.props.perspective;
-                    perspectiveDistort(regl, texture, null, [217,181,436,180,88,253,589,270], [2,1,635,-3,0,410,635,405])
+                    pipe({ src: texture, dest:fbo, flipX:true })
+                    barrelDistort(regl, fbo, fbo2, this.props.lens, this.props.fov)
                     
-                    //r g b p
+                    let {before, after} = this.props.perspective;
+                    perspectiveDistort(regl, fbo2, null, swap(before).map(ratio), swap(after).map(ratio)) 
+
+                    
 
                     fbo.destroy();
                     fbo2.destroy()
+
                     texture.destroy()
                 } catch(e) {
                     loop.cancel();
@@ -278,5 +290,3 @@ export class VideoControls extends React.Component{
     }
 
 }
-//[164,449,1182,479,872,308,454,293]
-//"lens":{"a":1,"b":"1.78289473684211","F":"1.28399122807018","scale":"0.50"},"fov":{"x":1,"y":1}}
