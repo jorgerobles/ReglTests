@@ -4,6 +4,8 @@
   "private": true,
   "devDependencies": {
     "getusermedia": "^2.0.0",
+    "gl-mat4": "^1.1.4",
+    "glfx": "0.0.4",
     "react-draggable": "^2.2.3",
     "react-redux": "^5.0.1",
     "react-scripts": "0.8.5",

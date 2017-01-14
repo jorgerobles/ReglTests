@@ -21,7 +21,7 @@ export class Webcam extends React.Component {
         this.canvas = ReactDOM.findDOMNode(this).querySelector('#stream canvas');
         
         this.image = new Image()
-        this.image.src = '../emblaser2.jpg'
+        this.image.src = this.props.src || '../emblaser2.jpg'
         
         
 
@@ -38,8 +38,8 @@ export class Webcam extends React.Component {
 
             
 
-            this.canvas.width = src.width
-            this.canvas.height = src.height
+            this.canvas.width = this.props.width
+            this.canvas.height = this.props.height
 
             
 
@@ -51,12 +51,14 @@ export class Webcam extends React.Component {
                           texture.mipmap = 'nice'
                     
                     
-                    pipe({ src: texture, dest:fbo })
-                    barrelDistort(regl, fbo, fbo2, this.props.lens, this.props.fov)
-                    //pipe({ src: fbo2 })
+                    //pipe({ src: texture, dest:null })
+                    //barrelDistort(regl, texture, fbo, this.props.lens, this.props.fov)
+                    //pipe({ src: fbo, dest:fbo2 })
                     let {before, after} = this.props.perspective;
-                    perspectiveDistort(regl, fbo2, null, before.map(ratio), after.map(ratio))
+                    perspectiveDistort(regl, texture, null, [217,181,436,180,88,253,589,270], [2,1,635,-3,0,410,635,405])
                     
+                    //r g b p
+
                     fbo.destroy();
                     fbo2.destroy()
                     texture.destroy()
@@ -216,7 +218,9 @@ export class PerspectiveWebcam extends React.Component {
                         perspective={{ before, after }} 
                         lens={this.props.lens} 
                         fov={this.props.fov} 
-                        device={this.props.device} />
+                        device={this.props.device}
+                        src={this.props.src}
+                        />
                 <Coordinator width={this.props.width} height={this.props.height}
                     onChange={(position) => { this.handlePerspectiveChange(position, "before") } }
                     onStop={(position) => { this.handleStop() } }
