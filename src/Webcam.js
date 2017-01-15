@@ -141,7 +141,7 @@ export class Webcam extends React.Component {
 Webcam.defaultProps = {
     width: 1280,
     height: 720,
-    resolution: { width: 1280, height: 720 }
+    resolution: { width: 2592, height: 1944 }
 }
 
 export class Coordinator extends React.Component {
