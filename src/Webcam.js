@@ -20,16 +20,12 @@ export class Webcam extends React.Component {
         this.video = ReactDOM.findDOMNode(this).querySelector('#stream video');
         this.canvas = ReactDOM.findDOMNode(this).querySelector('#stream canvas');
         
-        this.image = new Image()
-        this.image.src = this.props.src || '../emblaser2.jpg'
-        
         
 
         const regl = require('regl')(this.canvas);
         const pipe = drawCommand(regl)
 
         const swap = (set) =>{
-            
             return [
                 set[0], this.props.height-set[1],
                 set[2], this.props.height-set[3],
@@ -45,72 +41,82 @@ export class Webcam extends React.Component {
         }
 
         const capture = (src) => {
+            const regl = require('regl')(this.canvas);
+            const pipe = drawCommand(regl)
+            const fbopts= {
+                width: this.props.resolution.width, height: this.props.resolution.height
+            }
 
-            
+            this.loop = regl.frame(() => {
+                try {
+                    const video = regl.texture({data:src, min:'linear', mag:'linear'}); 
+                    const fbo = regl.framebuffer(fbopts)
+                    const fbo2 = regl.framebuffer(fbopts)
 
-            this.canvas.width = this.props.width
-            this.canvas.height = this.props.height
-
-            
-
-            const loop = regl.frame(() => {
-                try{
-                    const fbo = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
-                    const fbo2 = regl.framebuffer({ width: this.props.resolution.width, height: this.props.resolution.height })
-
-                    const texture = regl.texture(src)
-                          texture.mipmap = 'nice'
+                    pipe({ src: video, dest: fbo })
                     
-                    
-                    pipe({ src: texture, dest:fbo, flipX:true })
-                    barrelDistort(regl, fbo, fbo2, this.props.lens, this.props.fov)
-                    
-                    let {before, after} = this.props.perspective;
-                    perspectiveDistort(regl, fbo2, null, swap(before).map(ratio), swap(after).map(ratio)) 
+                    if (this.props.lens || this.props.fov) {
+                        barrelDistort(regl, fbo, fbo2, this.props.lens, this.props.fov)
+                    } else {
+                        pipe({ src: fbo, dest: fbo2 })
+                    }
 
+                    if (this.props.perspective) {
+                        let {before, after} = this.props.perspective;
+                        perspectiveDistort(regl, fbo2, null, swap(before).map(ratio), swap(after).map(ratio)) 
+                    } else {
+                        pipe({ src: fbo2 })
+                    }
                     
-
                     fbo.destroy();
-                    fbo2.destroy()
-
-                    texture.destroy()
+                    fbo2.destroy();
+                    video.destroy();
                 } catch(e) {
-                    loop.cancel();
+                    this.loop.cancel();
                 }
-
             })
 
         }
-        /*
+        
         let constraints = Object.assign({ video: true, audio: false }, this.props.constraints || {})
         if (this.props.device)
             constraints = Object.assign(constraints, { deviceId: { exact: this.props.device }, mandatory: { minWidth: this.props.resolution.width, minHeight: this.props.resolution.height } })
 
 
+        const useFallbackImage = (src) =>{
+            this.image = new Image()
+            this.image.src = src || '../emblaser2.jpg'
+            this.image.addEventListener('load',(e)=>{
+                this.canvas.width = this.props.width
+                this.canvas.height = this.props.height
+                capture(this.image)
+            })
+        }
 
-        getUserMedia(constraints, (err, stream) => {
-            if (err) {
-                console.error(err);
-            } else {
-                this.stream = stream;
-                this._startVideo(this.stream, capture)
 
-            }
+        if (this.props.src) {
+            useFallbackImage(this.props.src)
+        } else {
+            getUserMedia(constraints, (err, stream) => {
+                if (err) {
+                    console.error(err);
+                } else {
+                    this.stream = stream;
+                    this._startVideo(this.stream, capture)
 
-        })
-        */
-        this.image.addEventListener('load',(e)=>{
-            capture(this.image)
-        })
+                }
+
+            })
+        }
         
     }
 
-    _startVideo(stream, callback) {
+     _startVideo(stream, callback) {
         let that = this;
         this.video.src = window.URL.createObjectURL(stream);
         this.video.addEventListener('loadeddata', (e) => {
             if (this.video.readyState === 4) {
-                callback.apply(that)
+                callback.apply(that, [this.video])
             }
         }, false)
 
@@ -121,6 +127,10 @@ export class Webcam extends React.Component {
     };
 
     _stopVideo(stream) {
+        try {
+            if (this.loop) this.loop.cancel();
+        } catch(e){}
+        
         if (this.video)
             this.video.parentNode.removeChild(this.video);
         window.URL.revokeObjectURL(stream);
@@ -130,7 +140,6 @@ export class Webcam extends React.Component {
         return <div className="webcamViewport" style={{ width: this.props.width + "px", height: this.props.height + "px", overflow: "hidden" }}>
             <div id="stream">
                 <video width={this.props.width} height={this.props.height} style={{ display: "none" }} />
-                
                 <canvas />
             </div>
         </div>
@@ -205,9 +214,11 @@ export class PerspectiveWebcam extends React.Component {
                 w * 0.8, h * 0.2,
                 w * 0.2, h * 0.2
             ],
+            enable:false
         }
         this.handlePerspectiveChange.bind(this)
         this.handleStop.bind(this)
+        this.handleEnable.bind(this)
     }
 
     handlePerspectiveChange(position, key) {
@@ -219,6 +230,11 @@ export class PerspectiveWebcam extends React.Component {
             this.props.onStop(this.state);
     }
 
+    handleEnable()
+    {
+        this.setState({enable: !this.state.enable})
+    }
+
     render() {
 
         let before = this.state.before;
@@ -227,12 +243,13 @@ export class PerspectiveWebcam extends React.Component {
         return <div className="perspectiveWebcam">
             <div className="viewPort">
                 <Webcam width={this.props.width} height={this.props.height} 
-                        perspective={{ before, after }} 
+                        perspective={this.state.enable? {before, after}: undefined}
                         lens={this.props.lens} 
                         fov={this.props.fov} 
                         device={this.props.device}
                         src={this.props.src}
                         />
+
                 <Coordinator width={this.props.width} height={this.props.height}
                     onChange={(position) => { this.handlePerspectiveChange(position, "before") } }
                     onStop={(position) => { this.handleStop() } }
@@ -248,6 +265,9 @@ export class PerspectiveWebcam extends React.Component {
                     position={this.state.after}
                     style={{ position: "absolute", top: "0px", left: "0px" }}
                     />
+            </div>
+            <div>
+                <label>Apply Perspective<input type="checkbox" onClick={(e)=>this.handleEnable()} checked={this.state.enable}/></label>
             </div>
             <code>{JSON.stringify(this.state)}</code>
         </div>
