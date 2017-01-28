@@ -7,3 +7,6 @@ body {
 code {
   font-family: monospace; white-space: pre; color: red
 }
+
+label {display:block}
+label input[type=range] {width: 80%}

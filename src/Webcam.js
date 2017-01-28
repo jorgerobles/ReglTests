@@ -300,7 +300,7 @@ export class VideoControls extends React.Component{
             
             <label>a        <input className="form-control" value={this.props.lens.a} onChange={(e)=>{this.handleChange(e, "lens","a");}} type="range"  min="0" max="4" step="any"/></label>
             <label>b        <input className="form-control" value={this.props.lens.b} onChange={(e)=>{this.handleChange(e, "lens","b");}} type="range"  min="0" max="4" step="any"/></label>
-            <label>F        <input className="form-control" value={this.props.lens.f} onChange={(e)=>{this.handleChange(e, "lens","F");}} type="range"  min="0" max="4" step="any" /></label>
+            <label>F        <input className="form-control" value={this.props.lens.f} onChange={(e)=>{this.handleChange(e, "lens","F");}} type="range"  min="-1" max="4" step="any" /></label>
             <label>scale    <input className="form-control" value={this.props.lens.scale} onChange={(e)=>{this.handleChange(e, "lens","scale");}} type="range"  min="0" max="20" step="any"/></label>
             <label>Fov X    <input className="form-control" value={this.props.fov.x} onChange={(e)=>{this.handleChange(e, "fov","x");}} type="range"  min="0" max="2" step="any" /></label>
             <label>Fov Y    <input className="form-control" value={this.props.fov.y} onChange={(e)=>{this.handleChange(e, "fov","y");}} type="range"  min="0" max="2" step="any" /></label>
