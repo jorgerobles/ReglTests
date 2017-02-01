@@ -5,8 +5,7 @@ body {
 }
 
 code {
-  font-family: monospace; white-space: pre; color: red
+  font-family: monospace; white-space: pre; color: red; display: block;
 }
 
-.videoControls label {display:block}
-.videoControls label input[type=range] {width: 80%}
+.videoControls input[type=range] {width: 90%}

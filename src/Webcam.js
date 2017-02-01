@@ -19,21 +19,21 @@ export class Webcam extends React.Component {
 
         this.video = ReactDOM.findDOMNode(this).querySelector('#stream video');
         this.canvas = ReactDOM.findDOMNode(this).querySelector('#stream canvas');
-        
-        
+
+
 
         const regl = require('regl')(this.canvas);
         const pipe = drawCommand(regl)
 
-        const swap = (set) =>{
+        const swap = (set) => {
             return [
-                set[0], this.props.height-set[1],
-                set[2], this.props.height-set[3],
-                set[4], this.props.height-set[5],
-                set[6], this.props.height-set[7],
+                set[0], this.props.height - set[1],
+                set[2], this.props.height - set[3],
+                set[4], this.props.height - set[5],
+                set[6], this.props.height - set[7],
             ]
         }
-        
+
         const ratio = (value, index) => {
             let wh = !(index % 2) ? this.props.width : this.props.height;
             let rwh = !(index % 2) ? this.props.resolution.width : this.props.resolution.height;
@@ -43,18 +43,18 @@ export class Webcam extends React.Component {
         const capture = (src) => {
             const regl = require('regl')(this.canvas);
             const pipe = drawCommand(regl)
-            const fbopts= {
+            const fbopts = {
                 width: this.props.resolution.width, height: this.props.resolution.height
             }
 
             this.loop = regl.frame(() => {
                 try {
-                    const video = regl.texture({data:src, min:'linear', mag:'linear'}); 
+                    const video = regl.texture({ data: src, min: 'linear', mag: 'linear' });
                     const fbo = regl.framebuffer(fbopts)
                     const fbo2 = regl.framebuffer(fbopts)
 
                     pipe({ src: video, dest: fbo })
-                    
+
                     if (this.props.lens || this.props.fov) {
                         barrelDistort(regl, fbo, fbo2, this.props.lens, this.props.fov)
                     } else {
@@ -63,30 +63,30 @@ export class Webcam extends React.Component {
 
                     if (this.props.perspective) {
                         let {before, after} = this.props.perspective;
-                        perspectiveDistort(regl, fbo2, null, swap(before).map(ratio), swap(after).map(ratio)) 
+                        perspectiveDistort(regl, fbo2, null, swap(before).map(ratio), swap(after).map(ratio))
                     } else {
                         pipe({ src: fbo2 })
                     }
-                    
+
                     fbo.destroy();
                     fbo2.destroy();
                     video.destroy();
-                } catch(e) {
+                } catch (e) {
                     this.loop.cancel();
                 }
             })
 
         }
-        
+
         let constraints = Object.assign({ video: true, audio: false }, this.props.constraints || {})
         if (this.props.device)
-            constraints = Object.assign(constraints, { deviceId: { exact: this.props.device }, mandatory: { minWidth: this.props.resolution.width, minHeight: this.props.resolution.height } })
+            constraints = Object.assign(constraints, { deviceId: { exact: this.props.device }, mandatory: { exact: this.props.resolution.width, exact: this.props.resolution.height } })
 
 
-        const useFallbackImage = (src) =>{
+        const useFallbackImage = (src) => {
             this.image = new Image()
             this.image.src = src || '../emblaser2.jpg'
-            this.image.addEventListener('load',(e)=>{
+            this.image.addEventListener('load', (e) => {
                 this.canvas.width = this.props.width
                 this.canvas.height = this.props.height
                 capture(this.image)
@@ -108,10 +108,10 @@ export class Webcam extends React.Component {
 
             })
         }
-        
+
     }
 
-     _startVideo(stream, callback) {
+    _startVideo(stream, callback) {
         let that = this;
         this.video.src = window.URL.createObjectURL(stream);
         this.video.addEventListener('loadeddata', (e) => {
@@ -129,8 +129,8 @@ export class Webcam extends React.Component {
     _stopVideo(stream) {
         try {
             if (this.loop) this.loop.cancel();
-        } catch(e){}
-        
+        } catch (e) { }
+
         if (this.video)
             this.video.parentNode.removeChild(this.video);
         window.URL.revokeObjectURL(stream);
@@ -177,9 +177,9 @@ export class Coordinator extends React.Component {
             this.props.onStop(this.state.position)
     }
 
-    componentWillReceiveProps(nextProps){
-        
-       this.setState({position: nextProps.position.map(parseFloat)})
+    componentWillReceiveProps(nextProps) {
+
+        this.setState({ position: nextProps.position.map(parseFloat) })
     }
 
     render() {
@@ -188,10 +188,10 @@ export class Coordinator extends React.Component {
         let dotSize = this.props.dotSize || 10;
         let symbol = this.props.symbol || ((props) => { return <svg height="100%" width="100%"><circle r="50%" cx="50%" cy="50%" fill={props.fill} stroke="white" strokeWidth="1" /></svg> })
 
-        return <div className="coordinator" style={{ pointerEvents:"none",  width: this.props.width + "px", height: this.props.height + "px", position: 'relative', overflow: 'hidden', border: "1px solid #eee", ...this.props.style }}>
+        return <div className="coordinator" style={{ pointerEvents: "none", width: this.props.width + "px", height: this.props.height + "px", position: 'relative', overflow: 'hidden', border: "1px solid #eee", ...this.props.style }}>
             {dots.map((fill, i) => {
                 return <Draggable onStop={(e, ui) => { this.handleStop(e, ui, i) } } onDrag={(e, ui) => this.handleDrag(e, ui, i)} key={i} position={{ x: this.state.position[i * 2], y: this.state.position[i * 2 + 1] }} bounds="parent">
-                    <div className="symbol" style={{ pointerEvents:"all",cursor: "move", marginTop: -dotSize / 2, marginLeft: -dotSize / 2, width: dotSize, height: dotSize }}>{symbol({ fill })}</div>
+                    <div className="symbol" style={{ pointerEvents: "all", cursor: "move", marginTop: -dotSize / 2, marginLeft: -dotSize / 2, width: dotSize, height: dotSize }}>{symbol({ fill })}</div>
                 </Draggable>
             })}
         </div >
@@ -219,7 +219,7 @@ export class PerspectiveWebcam extends React.Component {
                 w * 0.8, h * 0.2,
                 w * 0.2, h * 0.2
             ],
-            enable:false
+            enable: false
         }
         this.handlePerspectiveChange.bind(this)
         this.handleStop.bind(this)
@@ -236,14 +236,13 @@ export class PerspectiveWebcam extends React.Component {
             this.props.onStop(this.state);
     }
 
-    handleEnable()
-    {
-        this.setState({enable: !this.state.enable})
+    handleEnable() {
+        this.setState({ enable: !this.state.enable })
     }
 
     handleValue(key, index, value) {
-        let position=this.state[key].slice();
-            position[index] = value;
+        let position = this.state[key].slice();
+        position[index] = value;
 
         this.handlePerspectiveChange(position, key)
     }
@@ -255,13 +254,13 @@ export class PerspectiveWebcam extends React.Component {
 
         return <div className="perspectiveWebcam">
             <div className="viewPort">
-                <Webcam width={this.props.width} height={this.props.height} 
-                        perspective={this.state.enable? {before, after}: undefined}
-                        lens={this.props.lens} 
-                        fov={this.props.fov} 
-                        device={this.props.device}
-                        src={this.props.src}
-                        />
+                <Webcam width={this.props.width} height={this.props.height}
+                    perspective={this.state.enable ? { before, after } : undefined}
+                    lens={this.props.lens}
+                    fov={this.props.fov}
+                    device={this.props.device}
+                    src={this.props.src}
+                    />
 
                 <Coordinator width={this.props.width} height={this.props.height}
                     onChange={(position) => { this.handlePerspectiveChange(position, "before") } }
@@ -281,52 +280,69 @@ export class PerspectiveWebcam extends React.Component {
             </div>
             <table>
                 <tr><th>Before</th>
-                {before.map((value,i)=>{
-                    return <td key={i}>{(i%2 === 0)? "X":"Y"}{Math.floor(i/2)}<input type="number" value={value} onChange={e=>{this.handleValue('before',i,e.target.value)}} step="any"/></td>
-                })}
+                    {before.map((value, i) => {
+                        return <td key={i}>{(i % 2 === 0) ? "X" : "Y"}{Math.floor(i / 2)}<input type="number" value={value} onChange={e => { this.handleValue('before', i, e.target.value) } } step="any" /></td>
+                    })}
                 </tr>
                 <tr><th>After</th>
-                {after.map((value,i)=>{
-                    return <td key={i}>{(i%2 === 0)? "X":"Y"}{Math.floor(i/2)}<input type="number" value={value} onChange={e=>{this.handleValue('after',i,e.target.value)}} step="any"/></td>
-                })}
+                    {after.map((value, i) => {
+                        return <td key={i}>{(i % 2 === 0) ? "X" : "Y"}{Math.floor(i / 2)}<input type="number" value={value} onChange={e => { this.handleValue('after', i, e.target.value) } } step="any" /></td>
+                    })}
                 </tr>
-                </table>
-                <label>Apply Perspective<input type="checkbox" onClick={(e)=>this.handleEnable()} checked={this.state.enable}/></label>
-            
+            </table>
+            <label>Apply Perspective<input type="checkbox" onClick={(e) => this.handleEnable()} checked={this.state.enable} /></label>
+
             <code>{JSON.stringify(this.state)}</code>
         </div>
     }
 
 }
 
-export class VideoControls extends React.Component{
+export class VideoControls extends React.Component {
 
-    constructor(props){
+    constructor(props) {
         super(props)
         this.handleChange.bind(this)
-        this.state={
-            lens:this.props.lens,
+        this.state = {
+            lens: this.props.lens,
             fov: this.props.fov,
         }
     }
 
-    handleChange(e,key,prop){
-        let state={...this.state};
-            state[key][prop]= e.target.value;
+    handleChange(e, key, prop) {
+        let state = { ...this.state };
+        state[key][prop] = e.target.value;
         this.setState(state)
         if (this.props.onChange)
             this.props.onChange(state);
-        
+
     }
 
-    render(){
+    render() {
         return <div className="videoControls">
-            
-            <label>a        <input className="form-control" value={this.props.lens.a} onChange={(e)=>{this.handleChange(e, "lens","a");}} type="range"  min="0" max="4" step="any"/></label>
-            <label>b        <input className="form-control" value={this.props.lens.b} onChange={(e)=>{this.handleChange(e, "lens","b");}} type="range"  min="0" max="4" step="any"/></label>
-            <label>F        <input className="form-control" value={this.props.lens.f} onChange={(e)=>{this.handleChange(e, "lens","F");}} type="range"  min="-1" max="4" step="any" /></label>
-            <label>scale    <input className="form-control" value={this.props.lens.scale} onChange={(e)=>{this.handleChange(e, "lens","scale");}} type="range"  min="0" max="20" step="any"/></label>
-           
+            <table width="100%">
+
+                <tr>
+                    <th>a</th>
+                    <td><input type="number" step="any" value={parseFloat(this.props.lens.a)} onChange={(e) => { this.handleChange(e, "lens", "a"); } } /></td>
+                    <td  width="100%"><input className="form-control" value={parseFloat(this.props.lens.a)} onChange={(e) => { this.handleChange(e, "lens", "a"); } } type="range" min="0" max="4" step="any" />    </td>
+                </tr>
+                <tr>
+                    <th>b</th>
+                    <td><input type="number" step="any" value={parseFloat(this.props.lens.b)} onChange={(e) => { this.handleChange(e, "lens", "b"); } } /></td>
+                    <td  width="100%"><input className="form-control" value={parseFloat(this.props.lens.b)} onChange={(e) => { this.handleChange(e, "lens", "b"); } } type="range" min="0" max="4" step="any" /></td>
+                </tr>
+                <tr>
+                    <th>F</th>
+                    <td><input type="number" step="any" value={parseFloat(this.props.lens.F)} onChange={(e) => { this.handleChange(e, "lens", "F"); } } /> </td>
+                    <td  width="100%"><input className="form-control" value={parseFloat(this.props.lens.F)} onChange={(e) => { this.handleChange(e, "lens", "F"); } } type="range" min="-1" max="4" step="any" />  </td>
+                </tr>
+                <tr>
+                    <th>scale</th>
+                    <td><input type="number" step="any" value={parseFloat(this.props.lens.scale)} onChange={(e) => { this.handleChange(e, "lens", "scale"); } } /> </td>
+                    <td width="100%"><input className="form-control" value={parseFloat(this.props.lens.scale)} onChange={(e) => { this.handleChange(e, "lens", "scale"); } } type="range" min="0" max="20" step="any" /> </td>
+                </tr>
+            </table>
             <code>{JSON.stringify(this.state)}</code>
         </div>
     }
