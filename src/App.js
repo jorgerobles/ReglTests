@@ -21,7 +21,7 @@ class App extends Component {
       return (
         <div className="App">
           <PerspectiveWebcam 
-            width="640" height="480" 
+            width="1280" height="720" 
             lens={this.state.lens} fov={this.state.fov} 
             perspective={this.state.perspective}
 //            src="../emblaser2.jpg"
