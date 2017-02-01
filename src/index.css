@@ -8,5 +8,5 @@ code {
   font-family: monospace; white-space: pre; color: red
 }
 
-label {display:block}
-label input[type=range] {width: 80%}
+.videoControls label {display:block}
+.videoControls label input[type=range] {width: 80%}

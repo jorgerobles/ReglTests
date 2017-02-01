@@ -177,6 +177,11 @@ export class Coordinator extends React.Component {
             this.props.onStop(this.state.position)
     }
 
+    componentWillReceiveProps(nextProps){
+        
+       this.setState({position: nextProps.position.map(parseFloat)})
+    }
+
     render() {
 
         let dots = this.props.dots || ['red', 'green', 'blue', 'purple']
@@ -219,6 +224,7 @@ export class PerspectiveWebcam extends React.Component {
         this.handlePerspectiveChange.bind(this)
         this.handleStop.bind(this)
         this.handleEnable.bind(this)
+        this.handleValue.bind(this)
     }
 
     handlePerspectiveChange(position, key) {
@@ -233,6 +239,13 @@ export class PerspectiveWebcam extends React.Component {
     handleEnable()
     {
         this.setState({enable: !this.state.enable})
+    }
+
+    handleValue(key, index, value) {
+        let position=this.state[key].slice();
+            position[index] = value;
+
+        this.handlePerspectiveChange(position, key)
     }
 
     render() {
@@ -266,9 +279,20 @@ export class PerspectiveWebcam extends React.Component {
                     style={{ position: "absolute", top: "0px", left: "0px" }}
                     />
             </div>
-            <div>
+            <table>
+                <tr><th>Before</th>
+                {before.map((value,i)=>{
+                    return <td key={i}>{(i%2 === 0)? "X":"Y"}{Math.floor(i/2)}<input type="number" value={value} onChange={e=>{this.handleValue('before',i,e.target.value)}} step="any"/></td>
+                })}
+                </tr>
+                <tr><th>After</th>
+                {after.map((value,i)=>{
+                    return <td key={i}>{(i%2 === 0)? "X":"Y"}{Math.floor(i/2)}<input type="number" value={value} onChange={e=>{this.handleValue('after',i,e.target.value)}} step="any"/></td>
+                })}
+                </tr>
+                </table>
                 <label>Apply Perspective<input type="checkbox" onClick={(e)=>this.handleEnable()} checked={this.state.enable}/></label>
-            </div>
+            
             <code>{JSON.stringify(this.state)}</code>
         </div>
     }
@@ -302,11 +326,16 @@ export class VideoControls extends React.Component{
             <label>b        <input className="form-control" value={this.props.lens.b} onChange={(e)=>{this.handleChange(e, "lens","b");}} type="range"  min="0" max="4" step="any"/></label>
             <label>F        <input className="form-control" value={this.props.lens.f} onChange={(e)=>{this.handleChange(e, "lens","F");}} type="range"  min="-1" max="4" step="any" /></label>
             <label>scale    <input className="form-control" value={this.props.lens.scale} onChange={(e)=>{this.handleChange(e, "lens","scale");}} type="range"  min="0" max="20" step="any"/></label>
-            <label>Fov X    <input className="form-control" value={this.props.fov.x} onChange={(e)=>{this.handleChange(e, "fov","x");}} type="range"  min="0" max="2" step="any" /></label>
-            <label>Fov Y    <input className="form-control" value={this.props.fov.y} onChange={(e)=>{this.handleChange(e, "fov","y");}} type="range"  min="0" max="2" step="any" /></label>
-
+           
             <code>{JSON.stringify(this.state)}</code>
         </div>
     }
+
+    /*
+     <!--
+            <label>Fov X    <input className="form-control" value={this.props.fov.x} onChange={(e)=>{this.handleChange(e, "fov","x");}} type="range"  min="0" max="2" step="any" /></label>
+            <label>Fov Y    <input className="form-control" value={this.props.fov.y} onChange={(e)=>{this.handleChange(e, "fov","y");}} type="range"  min="0" max="2" step="any" /></label>
+            -->
+    */
 
 }
